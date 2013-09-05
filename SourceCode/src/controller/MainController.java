@@ -10,11 +10,19 @@ public class MainController {
     
     private Properties config;
     
+    /**
+     * Singleton pattern needs default constructor to be private!
+     */
     private MainController() 
     {
         
     }
     
+    /**
+     * Returns an instance of MainController class.
+     * 
+     * @return 
+     */
     public static MainController getInstance() 
     {
         if (instance == null) {
