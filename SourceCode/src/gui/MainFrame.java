@@ -1,7 +1,19 @@
 package gui;
 
-public class MainFrame extends javax.swing.JFrame {
+import controller.MainController;
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.event.KeyEvent;
+import java.io.File;
+import java.util.ArrayList;
+import javax.swing.DefaultListModel;
+import models.LineEntry;
+import obspattern.UIListener;
 
+public class MainFrame extends javax.swing.JFrame implements UIListener
+{
+    private DefaultListModel<LineEntry> m_model = new DefaultListModel<LineEntry>();
+            
     /**
      * Creates new form MainFrame
      */
@@ -13,6 +25,84 @@ public class MainFrame extends javax.swing.JFrame {
         
         // Set a custom title
         setTitle("MyBB Language Updater");
+        
+        // Do not allow window resize!
+        setResizable(false);
+        
+        // Need to be notified when someone choose a file to edit
+        MainController.getInstance().addUIListener(this);
+        
+        // Set default list model
+        jList1.setModel(m_model);
+        
+        // Set default directory
+        String dir = MainController.getInstance().getConfigProperty("NewDirectory", "new");
+        jTextField1.setText(dir);
+        MainController.getInstance().setOlderName(dir);
+        
+        // Load for the firs time the new FileTree
+        loadFileTree(new File(dir));   
+    }
+    
+    private void refreshList()
+    {
+        m_model.clear();
+        
+        ArrayList<LineEntry> list = (ArrayList<LineEntry>)MainController.getInstance().getEntries();
+        for (LineEntry le : list) {
+            m_model.addElement(le);
+        }
+    }
+    
+    private void loadFileTree(final File filePath) 
+    {
+        new Thread() {
+            public void run() {
+                // Wait cursor
+                setCursor(Cursor.WAIT_CURSOR);
+                // Disable text editor
+                jTextField1.setEditable(false);
+
+                // First initialization?
+                FileTree fileTree = MainController.getInstance().getFileTree();
+                if (fileTree == null) {
+                    fileTree = new FileTree(filePath);
+                    MainController.getInstance().setFileTree(fileTree);
+                    jScrollPane1.setViewportView(fileTree);
+                } else {
+                    // Reload data
+                    fileTree.setNewModel(filePath);
+                }
+                
+                // Update status label
+                String message = "Directory '" + filePath.getName() + "' has ";
+                message += fileTree.getNumberOfDirs() + " subdirectories and " + fileTree.getNumberOFiles() + " files.";
+                statusLabel.setText(message);
+                
+                // Refresh list content
+                refreshList();
+                
+                // Enable text editor
+                jTextField1.setEditable(true);
+                // Notify on action finished!
+                setCursor(Cursor.DEFAULT_CURSOR);
+            }           
+        }.start();
+    }
+    
+    private boolean directoryChanged(String path)
+    {
+        File filePath = new File(path);
+        
+        // Directory exists?
+        if ( ! filePath.exists() || ! filePath.isDirectory()) {
+            return false;
+        }
+        
+        // Reload file structure
+        loadFileTree(filePath);
+        
+        return true;
     }
 
     /**
@@ -24,22 +114,115 @@ public class MainFrame extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        jScrollPane1 = new javax.swing.JScrollPane();
+        statusLabel = new javax.swing.JLabel();
+        jLabel2 = new javax.swing.JLabel();
+        jTextField1 = new javax.swing.JTextField();
+        jSeparator1 = new javax.swing.JSeparator();
+        jScrollPane2 = new javax.swing.JScrollPane();
+        jList1 = new javax.swing.JList();
+        jMenuBar1 = new javax.swing.JMenuBar();
+        jMenu1 = new javax.swing.JMenu();
+        jMenu2 = new javax.swing.JMenu();
+
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setPreferredSize(new java.awt.Dimension(600, 400));
+
+        statusLabel.setText("Merge");
+
+        jLabel2.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        jLabel2.setText("Original Directory");
+
+        jTextField1.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                jTextField1KeyPressed(evt);
+            }
+        });
+
+        jList1.setModel(new javax.swing.AbstractListModel() {
+            String[] strings = { "Item 1", "Item 2", "Item 3", "Item 4", "Item 5" };
+            public int getSize() { return strings.length; }
+            public Object getElementAt(int i) { return strings[i]; }
+        });
+        jScrollPane2.setViewportView(jList1);
+
+        jMenu1.setText("File");
+        jMenuBar1.add(jMenu1);
+
+        jMenu2.setText("Edit");
+        jMenuBar1.add(jMenu2);
+
+        setJMenuBar(jMenuBar1);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 400, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jSeparator1, javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(statusLabel, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                            .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
+                                .addComponent(jLabel2)
+                                .addGap(18, 18, 18)
+                                .addComponent(jTextField1))
+                            .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 280, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 290, Short.MAX_VALUE)))
+                .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 300, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(jLabel2)
+                            .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jScrollPane1))
+                    .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 302, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(statusLabel)
+                .addGap(4, 4, 4))
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
+    private void jTextField1KeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTextField1KeyPressed
+        if (evt.getKeyCode() == KeyEvent.VK_ENTER) {
+            MainController.getInstance().setOlderName(jTextField1.getText());
+            if (directoryChanged(jTextField1.getText())) {
+                jTextField1.setBackground(Color.GREEN);
+            } else {
+                jTextField1.setBackground(Color.RED);
+            }
+        }
+    }//GEN-LAST:event_jTextField1KeyPressed
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JList jList1;
+    private javax.swing.JMenu jMenu1;
+    private javax.swing.JMenu jMenu2;
+    private javax.swing.JMenuBar jMenuBar1;
+    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JSeparator jSeparator1;
+    private javax.swing.JTextField jTextField1;
+    private javax.swing.JLabel statusLabel;
     // End of variables declaration//GEN-END:variables
+
+    @Override
+    public void listUpdated() {
+        // Refresh list elements
+        refreshList();
+    }
 }
